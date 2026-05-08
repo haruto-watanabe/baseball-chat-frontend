@@ -1,0 +1,76 @@
+<script>
+    var stompClient = null;
+    const urlParams = new URLSearchParams(window.location.search);
+    const gameId = urlParams.get('gameId');
+    const gameDateStr = urlParams.get('date');
+
+    // ★重要：RenderのバックエンドURL
+    const BASE_URL = "https://open-baseball-chat.onrender.com";
+
+    document.getElementById('room-title').innerText = gameId ? gameId.split('-').slice(0, 2).join(' vs ') : "ライブチャット";
+
+    function connect() {
+        // ★修正ポイント：相対パス '/chat-websocket' から絶対パスに変更
+        var socket = new SockJS(BASE_URL + '/chat-websocket');
+        stompClient = Stomp.over(socket);
+        stompClient.debug = null;
+        stompClient.connect({}, function (frame) {
+            stompClient.subscribe('/topic/messages/' + gameId, function (response) {
+                showChat(response.body);
+            });
+        });
+    }
+
+    function checkAccess() {
+        if (!gameDateStr) return true;
+        const now = new Date();
+        const [year, month, day] = gameDateStr.split('-').map(Number);
+        const openTime = new Date(year, month - 1, day, 10, 0, 0);
+        const closeTime = new Date(year, month - 1, day + 1, 4, 0, 0);
+
+        if (now < openTime || now > closeTime) {
+            alert("この試合のチャットは、試合当日10:00から翌日4:00まで利用可能です。");
+            location.href = 'index.html';
+            return false;
+        }
+        return true;
+    }
+
+    // --- send() や showChat() 関数は以前のままでOK ---
+    function handleKeyPress(event) { if (event.key === 'Enter') send(); }
+
+    function send() {
+        var nameInput = document.getElementById('name');
+        var name = nameInput.value || "匿名";
+        var msgInput = document.getElementById('message');
+        var msg = msgInput.value;
+        if (!msg) return;
+        stompClient.send("/app/send/" + gameId, {}, name + ": " + msg);
+        msgInput.value = '';
+    }
+
+    function showChat(message) {
+        var chatBox = document.getElementById('chat-box');
+        var parts = message.split(': ');
+        var name = parts[0];
+        var text = parts.slice(1).join(': ');
+        var container = document.createElement('div');
+        container.className = 'message-container';
+        var iconUrl = "https://ui-avatars.com/api/?name=" + encodeURIComponent(name) + "&background=random&color=fff&size=32";
+        container.innerHTML = `
+            <img src="${iconUrl}" class="avatar">
+            <div class="content">
+                <span class="user-name">${name}</span>
+                <span class="text">${text}</span>
+            </div>
+        `;
+        chatBox.appendChild(container);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    window.onload = () => {
+        if (checkAccess()) {
+            connect();
+        }
+    };
+</script>
