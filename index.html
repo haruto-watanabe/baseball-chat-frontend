@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>NPB Hub - Schedule</title>
     <style>
-        /* CSS部分は変更なし */
+        /* 基本スタイルは維持 */
         body { font-family: "Helvetica Neue", Arial, sans-serif; background: #f0f2f5; padding: 20px; margin: 0; }
         .container { max-width: 1000px; margin: 0 auto; }
         .header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
@@ -14,7 +14,10 @@
         .calendar-btn { background: white; border: 1px solid #005596; color: #005596; padding: 10px 15px; border-radius: 20px; cursor: pointer; font-weight: bold; }
         .game-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
         .game-card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border-left: 8px solid #005596; position: relative; }
-        .live-badge { position: absolute; top: 15px; right: 15px; background: #666; color: white; padding: 3px 10px; border-radius: 4px; font-size: 0.75em; font-weight: bold; }
+        
+        /* バッジの基本スタイル（色はJSで動的に変えるためここでは指定しないか、デフォルト色にする） */
+        .live-badge { position: absolute; top: 15px; right: 15px; color: white; padding: 3px 10px; border-radius: 4px; font-size: 0.75em; font-weight: bold; }
+        
         .venue-info { font-size: 0.85em; color: #666; margin-bottom: 10px; }
         .teams-area { display: flex; justify-content: space-around; align-items: center; margin: 20px 0; }
         .team-name { font-size: 1.4em; font-weight: bold; color: #333; }
@@ -57,7 +60,6 @@
         overlay.style.display = isVisible ? 'none' : 'block';
     }
 
-    // サーバーを起こしに行く関数
     async function wakeUpServer() {
         console.log("サーバーをバックグラウンドで起動しています...");
         fetch(`${BASE_URL}/api/games?date=2000-01-01`).catch(() => {});
@@ -69,7 +71,8 @@
         const mm = String(now.getMonth() + 1).padStart(2, '0');
         const dd = String(now.getDate()).padStart(2, '0');
         const todayStr = `${yyyy}-${mm}-${dd}`;
-        document.getElementById('date-picker').value = todayStr;
+        const picker = document.getElementById('date-picker');
+        if (picker) picker.value = todayStr;
         loadGames(todayStr);
     }
 
@@ -93,10 +96,13 @@
                     const closeTime = new Date(year, month - 1, day + 1, 4, 0, 0);
                     const isOpen = now >= openTime && now <= closeTime;
 
+                    // ★バッジの色を動的に決定（試合中なら赤）
+                    const badgeBgColor = game.status === "試合中" ? "#d32f2f" : "#666";
+
                     const card = document.createElement('div');
                     card.className = 'game-card';
                     card.innerHTML = `
-                        <div class="live-badge">${game.status}</div>
+                        <div class="live-badge" style="background: ${badgeBgColor}">${game.status}</div>
                         <div class="venue-info">${game.venue} ｜ ${game.startTime} 開始</div>
                         <div class="teams-area">
                             <span class="team-name">${game.awayTeam}</span>
@@ -114,15 +120,15 @@
             }
         } catch (e) {
             console.error("データ取得失敗:", e);
-            document.getElementById('game-list').innerHTML = '<p style="text-align:center; color:red;">サーバーがスリープ中か、起動していません。30秒ほど待ってから「本日」ボタンを押してください。</p>';
+            document.getElementById('game-list').innerHTML = '<p style="text-align:center; color:red;">サーバー起動中...30秒ほど待ってから「本日」ボタンを押してください。</p>';
         }
 
         if (document.getElementById('calendar-modal').style.display === 'block') toggleCalendar();
     }
 
     window.onload = () => {
-        wakeUpServer(); // 裏で起動開始
-        goToToday();    // データの読み込み開始
+        wakeUpServer(); 
+        goToToday();    
     };
 </script>
 </body>
