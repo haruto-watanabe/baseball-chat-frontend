@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>野球談義 - ライブチャット</title>
+    <title>baseball-chat</title>
     <style>
         /* スマホ・PC両対応の最新スタイル */
         html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
@@ -97,13 +97,43 @@
         document.getElementById('message').value = '';
     }
 
+    // ★修正ポイント：セキュリティ強化（XSS対策）済みの表示関数
     function showChat(message) {
         var chatBox = document.getElementById('chat-box');
         var parts = message.split(': ');
+        var name = parts[0];
+        var text = parts.slice(1).join(': '); // コロンが含まれていても正しく結合
+
+        // 1. メッセージ全体のコンテナ
         var container = document.createElement('div');
         container.className = 'message-container';
-        var iconUrl = "https://ui-avatars.com/api/?name=" + encodeURIComponent(parts[0]) + "&background=random&color=fff";
-        container.innerHTML = `<img src="${iconUrl}" class="avatar"><div class="content"><span class="user-name">${parts[0]}</span><span class="text">${parts[1]}</span></div>`;
+
+        // 2. アイコン画像
+        var img = document.createElement('img');
+        img.className = 'avatar';
+        img.src = "https://ui-avatars.com/api/?name=" + encodeURIComponent(name) + "&background=random&color=fff";
+
+        // 3. テキストコンテンツ用の枠
+        var contentDiv = document.createElement('div');
+        contentDiv.className = 'content';
+
+        // 4. 名前（textContentで安全に挿入）
+        var nameSpan = document.createElement('span');
+        nameSpan.className = 'user-name';
+        nameSpan.textContent = name;
+
+        // 5. 本文（textContentで安全に挿入）
+        var textSpan = document.createElement('span');
+        textSpan.className = 'text';
+        textSpan.textContent = text;
+
+        // 6. 組み立て
+        contentDiv.appendChild(nameSpan);
+        contentDiv.appendChild(textSpan);
+        container.appendChild(img);
+        container.appendChild(contentDiv);
+
+        // 7. 画面に追加してスクロール
         chatBox.appendChild(container);
         chatBox.scrollTop = chatBox.scrollHeight;
     }
