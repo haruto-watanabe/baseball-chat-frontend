@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>NPB Hub - Schedule</title>
     <style>
-        /* CSS部分は以前のまま維持（読みやすさのため省略しません） */
+        /* CSS部分は変更なし */
         body { font-family: "Helvetica Neue", Arial, sans-serif; background: #f0f2f5; padding: 20px; margin: 0; }
         .container { max-width: 1000px; margin: 0 auto; }
         .header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
@@ -47,7 +47,6 @@
 </div>
 
 <script>
-    // ★重要：RenderのバックエンドURL
     const BASE_URL = "https://open-baseball-chat.onrender.com";
 
     function toggleCalendar() {
@@ -56,6 +55,12 @@
         const isVisible = modal.style.display === 'block';
         modal.style.display = isVisible ? 'none' : 'block';
         overlay.style.display = isVisible ? 'none' : 'block';
+    }
+
+    // サーバーを起こしに行く関数
+    async function wakeUpServer() {
+        console.log("サーバーをバックグラウンドで起動しています...");
+        fetch(`${BASE_URL}/api/games?date=2000-01-01`).catch(() => {});
     }
 
     function goToToday() {
@@ -70,7 +75,6 @@
 
     async function loadGames(date) {
         try {
-            // ★修正ポイント：BASE_URL を使用した絶対パスに変更
             const response = await fetch(`${BASE_URL}/api/games?date=${date}`);
             const games = await response.json();
 
@@ -116,7 +120,10 @@
         if (document.getElementById('calendar-modal').style.display === 'block') toggleCalendar();
     }
 
-    window.onload = goToToday;
+    window.onload = () => {
+        wakeUpServer(); // 裏で起動開始
+        goToToday();    // データの読み込み開始
+    };
 </script>
 </body>
 </html>
